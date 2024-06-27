@@ -1,0 +1,50 @@
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import datetime
+
+# Palabras clave relacionadas con protestas
+keywords = ["protesta"]
+
+# Definir la URL de búsqueda del sitio de Página/12
+base_url = "https://www.pagina12.com.ar/buscar?q="
+
+def scrape_pagina12_search():
+    data = []
+    for keyword in keywords:
+        search_url = base_url + keyword
+        response = requests.get(search_url)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        articles = soup.find_all('article')
+
+        for article in articles:
+            title_tag = article.find('h2') or article.find('h1') or article.find('h3')
+            title = title_tag.get_text() if title_tag else "N/A"
+            link_tag = article.find('a')
+            link = link_tag['href'] if link_tag else "N/A"
+            # Obtener el contenido de todos los párrafos dentro del artículo
+            content_tags = article.find_all('p')
+            content = " ".join([tag.get_text() for tag in content_tags])
+            date = datetime.datetime.now().strftime("%Y-%m-%d")
+
+            data.append({
+                'title': title,
+                'link': link,
+                'content': content,
+                'date': date
+            })
+
+    return data
+
+# Recolectar los datos
+data = scrape_pagina12_search()
+df = pd.DataFrame(data)
+
+# Mostrar una muestra de los datos recolectados
+print(df.head())
+
+# Guardar el DataFrame en un archivo CSV
+output_file_path = 'protestas_sociales_pagina12_search_scraping_v2.csv'
+df.to_csv(output_file_path, index=False)
+
+print(f"Archivo guardado en {output_file_path}")
